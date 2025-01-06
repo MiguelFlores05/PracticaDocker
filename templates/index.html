@@ -1,0 +1,92 @@
+<!-- Determinamos el formato del documento -->
+<!DOCTYPE html>
+<html>
+<!-- Seccion de la cabeza del documento -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Título de la página en la pestaña del navegador -->
+    <title>Predicción de Modelo</title>
+    <!-- Diseño de la página -->
+    <style>    
+        body {font-family: 'Times New Roman', Times, serif; background-color: #ffffff;
+              margin: 0; padding: 0;}
+        header {background-color: #007BFF; color: white; padding: 20px; text-align: center;}
+        main {max-width: 800px; margin: 20px auto; padding: 20px; background: white; }
+        h1 {color: #000000; margin-bottom: 20px;}
+        form {display: flex; flex-direction: column; gap: 15px;}
+        label {font-weight: bold; margin-bottom: 5px; color: #000000;}
+        select, input[type="text"] {padding: 10px; border: 1px solid #ccc; border-radius: 5px;
+                                    font-size: 16px;}
+        select:focus, input[type="text"]:focus {border-color: #007BFF;outline: none;}
+        button {background-color: #007BFF; color: white; padding: 10px 15px; font-size: 16px;
+                border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease;}
+        button:hover {background-color: #0056b3;}
+        .message {margin-top: 20px;padding: 10px;border-radius: 5px;}
+        .success {background-color: #d4edda;color: #155724;border: 1px solid #c3e6cb;}
+        .error {background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+    </style>
+</head>
+<!-- Cuerpo del documento -->
+<body>
+    <header>
+        <!-- Títutlo -->
+        <h1>Formulario de préstamo</h1>
+    </header>
+    <main>
+        <form action="/predict" method="post">
+            <!-- Generar dinámicamente los campos del formulario -->
+            {% for description, feature in features.items() %}
+                {% if feature == 'OCCUPATION_TYPE' %}
+                    <!-- Menú desplegable para OCCUPATION_TYPE -->
+                    <div>
+                        <label for="{{ feature }}">{{ description }}</label>
+                        <select id="{{ feature }}" name="{{ feature }}" required>
+                            {% for key in OCCUPATION_TYPE_MAPPING.keys() %}
+                                <option value="{{ key }}">{{ key }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% elif feature == 'ORGANIZATION_TYPE' %}
+                    <!-- Menú desplegable para ORGANIZATION_TYPE -->
+                    <div>
+                        <label for="{{ feature }}">{{ description }}</label>
+                        <select id="{{ feature }}" name="{{ feature }}" required>
+                            {% for key in ORGANIZATION_TYPE_MAPPING.keys() %}
+                                <option value="{{ key }}">{{ key }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% else %}
+                    <!-- Campo de texto para otros valores -->
+                    <div>
+                        <label for="{{ feature }}">{{ description }}</label>
+                        <input type="text" id="{{ feature }}" name="{{ feature }}" required>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <button type="submit">Predecir</button>
+        </form>
+
+        <!-- Mostrar la predicción si está disponible -->
+        {% if prediction is not none %}
+            <div class="message success">
+                {% if prediction == 0 %}
+                    <h2>Resultado: No cumple con los requisitos del préstamo</h2>
+                {% elif prediction == 1 %}
+                    <h2>Resultado: Cumple con los requisitos del préstamo</h2>
+                {% else %}
+                    <h2>Resultado: {{ prediction }}</h2>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Mostrar el mensaje de error si está disponible -->
+        {% if error is not none %}
+            <div class="message error">
+                <h3>Error: {{ error }}</h3>
+            </div>
+        {% endif %}
+    </main>
+</body>
+</html>
