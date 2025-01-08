@@ -1,6 +1,5 @@
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
 # Título del Dashboard
@@ -19,27 +18,57 @@ try:
     if faltantes:
         st.error(f"El archivo CSV debe contener las columnas: {', '.join(faltantes)}")
     else:
-    # Gráfico de barras comparativo entre resultados generados para 0 y 1
-        st.subheader("Número de predicciones para 0 y 1")
+        # Primera gráfica: Número de predicciones
+        st.subheader("Número de Predicciones para 0 y 1")
         conteo_resultado = data['prediction'].value_counts().reset_index()
         conteo_resultado.columns = ['Prediction', 'Count']
-        fig1 = px.bar(conteo_resultado,x='Prediction', y='Count', labels={"Prediction": "Predicción", 
-                                                                          "Count": "Cantidad"})
+        color_mapping = {0: 'orange', 1: 'blue'}
+        fig1 = px.bar(conteo_resultado, x='Prediction', y='Count', labels={"Prediction": "Predicción", "Count": "Cantidad"})
+        fig1.update_traces(marker_color=[color_mapping[pred] for pred in conteo_resultado['Prediction']])
         st.plotly_chart(fig1)
-    # Gráfico de barras para OCCUPATION_TYPE_TEXT con columnas para 0 y 1
-        st.subheader("Distribución por OCCUPATION_TYPE_TEXT")
+
+        # Segunda gráfica: Ocupación con predicciones separadas
+        st.subheader("Distribución de Predicciones por Tipo de Ocupación")
         conteo_ocupacion = data.groupby(['OCCUPATION_TYPE_TEXT', 'prediction']).size().reset_index(name='Count')
-        fig2 = px.bar(conteo_ocupacion, x='OCCUPATION_TYPE_TEXT', y='Count', barmode='group',
-            labels={"OCCUPATION_TYPE_TEXT": "Tipo de Ocupación", "Count": "Cantidad", "prediction": "Predicción"})
+
+        # Separar las predicciones 0 y 1 en columnas distintas
+        ocupacion_pivot = conteo_ocupacion.pivot(index='OCCUPATION_TYPE_TEXT', columns='prediction', values='Count').fillna(0)
+
+        # Aplanar el DataFrame para su visualización
+        ocupacion_pivot = ocupacion_pivot.reset_index().melt(id_vars=['OCCUPATION_TYPE_TEXT'], value_name='Count', var_name='Prediction')
+
+        # Crear la gráfica con barras separadas
+        fig2 = px.bar(ocupacion_pivot,x='OCCUPATION_TYPE_TEXT',y='Count',color='Prediction',barmode='group',  # Separar las barras
+            color_discrete_map={0: 'orange', 1: 'blue'}, labels={"OCCUPATION_TYPE_TEXT": "Tipo de Ocupación",
+                                                                "Count": "Cantidad","Prediction": "Predicción"})
+
+        # Mejorar el diseño de la gráfica
+        fig2.update_layout(xaxis={'categoryorder': 'total descending'}, legend_title_text="Predicción", xaxis_title="Tipo de Ocupación",
+                           yaxis_title="Cantidad")
         st.plotly_chart(fig2)
-    # Comparación entre sexos mostrando columnas para cada género y predicción
-        st.subheader("Distribución de Predicciones entre Generos")
-        conteo_genero = {"Femenino 0": data[(data['CODE_GENDER_F'] == 1) & (data['prediction'] == 0)].shape[0],
-                         "Femenino 1": data[(data['CODE_GENDER_F'] == 1) & (data['prediction'] == 1)].shape[0],
-                         "Masculino 0": data[(data['CODE_GENDER_M'] == 1) & (data['prediction'] == 0)].shape[0],
-                         "Masculino 1": data[(data['CODE_GENDER_M'] == 1) & (data['prediction'] == 1)].shape[0]}
-        df_genero = pd.DataFrame(list(conteo_genero.items()), columns = ['Category', 'Count'])
-        fig3 = px.bar(df_genero,x='Category', y='Count',labels={"Category": "Categoría", "Count": "Cantidad"})
+
+        # Tercera gráfica: Distribución de predicciones entre géneros basada en comparación
+        st.subheader("Distribución de Predicciones entre Géneros")
+
+        # Determinar el género según el menor valor en las columnas CODE_GENDER_F y CODE_GENDER_M
+        data['Gender'] = data.apply(lambda row: 'Femenino' if row['CODE_GENDER_F'] < row['CODE_GENDER_M'] else 'Masculino', axis=1)
+
+        # Agrupar por género y predicción
+        conteo_genero = data.groupby(['Gender', 'prediction']).size().reset_index(name='Count')
+
+        # Separar las predicciones 0 y 1 en columnas distintas
+        genero_pivot = conteo_genero.pivot(index='Gender', columns='prediction', values='Count').fillna(0)
+
+        # Aplanar el DataFrame para su visualización
+        genero_pivot = genero_pivot.reset_index().melt(id_vars=['Gender'], value_name='Count', var_name='Prediction')
+
+        # Crear la gráfica con barras separadas
+        fig3 = px.bar(genero_pivot,x='Gender',y='Count',color='Prediction',barmode='group',  # Separar las barras
+            color_discrete_map={0: 'orange', 1: 'blue'},labels={"Gender": "Género","Count": "Cantidad","Prediction": "Predicción"})
+
+        # Mejorar el diseño de la gráfica
+        fig3.update_layout(xaxis={'categoryorder': 'total descending'},legend_title_text="Predicción",xaxis_title="Género",
+            yaxis_title="Cantidad")
         st.plotly_chart(fig3)
 
         st.success("¡Dashboard generado correctamente!")
